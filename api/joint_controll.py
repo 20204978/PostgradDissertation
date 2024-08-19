@@ -1,4 +1,4 @@
-import sim
+"""  import sim
 import time
 
 sim.simxFinish(-1) #closes any other connections
@@ -26,3 +26,4 @@ if clientID != -1:
     sim.simxFinish(clientID)
 else:
     print("Failed to connect")
+"""

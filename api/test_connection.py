@@ -1,3 +1,4 @@
+"""
 try:
     import sim
 except:
@@ -28,3 +29,4 @@ if clientID!=-1:
 else:
     print ('Failed connecting to remote API server')
 print ('Program ended')
+"""
