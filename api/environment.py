@@ -57,14 +57,20 @@ class NaoEnvironment:
         return next_state, reward, done
 
     def reset(self):
-        # Pause sim
-        sim.simxPauseSimulation(self.clientID, sim.simx_opmode_blocking)  # Pause simulation instead of stopping
+        # Pause the sim
+        sim.simxPauseSimulation(self.clientID, sim.simx_opmode_blocking)
+        # Reset robot's position and orientation to initial values
+        initial_position = [-0.45, 0.275, 0.3518]  # (X, Y, Z) this is whats on copsim
+        initial_orientation = [0.0, 0.0, 0.0]  # (Alpha, Beta, Gamma)
+        res, robot_handle = sim.simxGetObjectHandle(self.clientID, '/NAO', sim.simx_opmode_blocking)
+        if res == sim.simx_return_ok:
+            sim.simxSetObjectPosition(self.clientID, robot_handle, -1, initial_position, sim.simx_opmode_blocking)
+            sim.simxSetObjectOrientation(self.clientID, robot_handle, -1, initial_orientation, sim.simx_opmode_blocking)
         # Reset joint angles to the initial position
         for joint in self.joint_names:
             handle = self.joint_handles.get(joint)
             if handle:
                 sim.simxSetJointTargetPosition(self.clientID, handle, 0.0, sim.simx_opmode_blocking)  # Reset to 0 angle
-        # Delay to make sure evrythin is processec
         time.sleep(0.1)
         # Resume the simulation after resetting the robot
         sim.simxStartSimulation(self.clientID, sim.simx_opmode_blocking)
