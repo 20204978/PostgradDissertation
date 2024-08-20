@@ -43,6 +43,8 @@ class NaoEnvironment:
     
     def step(self, action):
         # Apply action, get new state, calc reward, check if done
+        if isinstance(action, int):
+            action = [action] * len(self.joint_names)  # Repeat the single action for each joint
         for i, joint in enumerate(self.joint_names):
             handle = self.joint_handles[joint]  # Use pre-stored handle
             # Apply action to each joint

@@ -28,7 +28,7 @@ if __name__ == "__main__":
     for e in range(1000):  # Number of eps
         state = env.reset()
         state = np.reshape(state, [1, state_size])
-        for time in range(500):  # Time steps per episode
+        for time in range(10):  # Time steps per episode
             action = agent.act(state)
             next_state, reward, done = env.step(action)
             reward = reward if not done else -10
