@@ -55,19 +55,20 @@ class NaoEnvironment:
         return next_state, reward, done
 
     def reset(self):
-        # Rather than stopping and restarting the simulation, I will reset the robot's position and joints
+        # Pause sim
         sim.simxPauseSimulation(self.clientID, sim.simx_opmode_blocking)  # Pause simulation instead of stopping
-
-        # Resetting joint angles to the initial position
+        # Reset joint angles to the initial position
         for joint in self.joint_names:
-            res, handle = sim.simxGetObjectHandle(self.clientID, joint, sim.simx_opmode_blocking)
-            if res == sim.simx_return_ok:
+            handle = self.joint_handles.get(joint)
+            if handle:
                 sim.simxSetJointTargetPosition(self.clientID, handle, 0.0, sim.simx_opmode_blocking)  # Reset to 0 angle
-    
-        sim.simxStartSimulation(self.clientID, sim.simx_opmode_blocking)  # Resume simulation after resetting the robot
-        state = self.get_state()  # Get the initial state after reset
+        # Delay to make sure evrythin is processec
+        time.sleep(0.1)
+        # Resume the simulation after resetting the robot
+        sim.simxStartSimulation(self.clientID, sim.simx_opmode_blocking)
+        # Get the initial state after reset
+        state = self.get_state()
         return state
-
 
     def get_state(self):
         # Gets current state of env
