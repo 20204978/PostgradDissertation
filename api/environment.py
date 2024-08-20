@@ -18,8 +18,18 @@ class NaoEnvironment:
                             '/NAO/LRFingerBase', '/NAO/LRFingerBase/joint', '/NAO/LRFingerBase/joint/Cuboid/joint',
                             '/NAO/LLFingerBase', '/NAO/LLFingerBase/joint', '/NAO/LLFingerBase/joint/Cuboid/joint',
                             '/NAO/HeadYaw', '/NAO/HeadPitch']
+        self.joint_handles = self.get_joint_handles()
         self.state_size = len(self.joint_names) * 2 # For both position & velocity of each joint
         self.action_size = len(self.joint_names) # 1 action per joint 
+
+    def get_joint_handles(self):
+        # Get all joint handles once and store them
+        joint_handles = {}
+        for joint in self.joint_names:
+            res, handle = sim.simxGetObjectHandle(self.clientID, joint, sim.simx_opmode_blocking)
+            if res == sim.simx_return_ok:
+                joint_handles[joint] = handle
+        return joint_handles
 
     def calculate_reward(self, state):
         # Calc and return reward based on the state
@@ -33,10 +43,9 @@ class NaoEnvironment:
     def step(self, action):
         # Apply action, get new state, calc reward, check if done
         for i, joint in enumerate(self.joint_names):
-            res, handle = sim.simxGetObjectHandle(self.clientID, joint, sim.simx_opmode_blocking)
-            if res == sim.simx_return_ok:
-                # Apply action to each joint
-                sim.simxSetJointTargetPosition(self.clientID, handle, action[i], sim.simx_opmode_oneshot)
+            handle = self.joint_handles[joint]  # Use pre-stored handle
+            # Apply action to each joint
+            sim.simxSetJointTargetPosition(self.clientID, handle, action[i], sim.simx_opmode_oneshot)
         # Advance simulation
         sim.simxSynchronousTrigger(self.clientID)
         next_state = self.get_state() 
@@ -46,7 +55,11 @@ class NaoEnvironment:
 
     def reset(self):
         # Reset env to initial state
-        state = self.get_state
+        sim.simxStopSimulation(self.clientID, sim.simx_opmode_blocking)
+        sim.simxSynchronousTrigger(self.clientID)  # Ensure all commands are processed
+        sim.simxStartSimulation(self.clientID, sim.simx_opmode_blocking)
+        sim.simxSynchronousTrigger(self.clientID)  # Ensure all commands are processed
+        state = self.get_state()
         return state
 
     def get_state(self):
@@ -57,10 +70,19 @@ class NaoEnvironment:
             if res == sim.simx_return_ok:
                 # Get joint angle
                 res, position = sim.simxGetJointPosition(self.clientID, handle, sim.simx_opmode_blocking)
-                state.append(position)
-                # Get join velocity
+                if res == sim.simx_return_ok:
+                    state.append(position)
+                else:
+                    print(f"Failed to get joint position for {joint}")
+                # Get joint velocity
                 res, velocity = sim.simxGetObjectFloatParameter(self.clientID, handle, 2012, sim.simx_opmode_blocking)
-                state.append(velocity)
+                if res == sim.simx_return_ok:
+                    state.append(velocity)
+                else:
+                    print(f"Failed to get joint velocity for {joint}")
+            else:
+                print(f"Failed to get joint handle for {joint}")
         return np.array(state)
+
 
     

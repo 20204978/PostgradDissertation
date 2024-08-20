@@ -1,5 +1,6 @@
 import sim
 import sys
+import numpy as np
 from environment import NaoEnvironment
 
 def connect_to_simulation():
