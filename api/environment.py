@@ -79,46 +79,49 @@ class NaoEnvironment:
         return initial_states
 
     def calculate_reward(self, state):
-        # Base reward for forward movement (state[0] should be forward distance or similar metric)
-        reward = state[0]  # Assuming state[0] indicates forward movement
-        print(f"Forward movement reward: {reward}")
-        # Check if the robot has fallen
-        if self.check_done(state):
-            reward -= 100  # Apply a large penalty if the robot has fallen
-            print("Robot has fallen. Applying fall penalty: -100")
+         # Reward for consistent joint movements (indicating a walking motion)
+        joint_movements = sum(abs(state[i+1]) for i in range(0, len(state), 2))  # Sum of all joint velocities
+        reward = joint_movements * 10  # Scale for better learning signals
+        print(f"Joint movement reward: {reward}")
+
+        # Get the robot's base handle
+        res, base_handle = sim.simxGetObjectHandle(self.clientID, 'NAO', sim.simx_opmode_blocking)
+        if res == sim.simx_return_ok:
+            _, base_position = sim.simxGetObjectPosition(self.clientID, base_handle, -1, sim.simx_opmode_blocking)
+            _, base_orientation = sim.simxGetObjectOrientation(self.clientID, base_handle, -1, sim.simx_opmode_blocking)
+            roll, pitch, yaw = base_orientation
+
+            # Add bonus for maintaining balance (staying upright)
+            if abs(roll) < 0.5 and abs(pitch) < 0.5:
+                reward += 1.0  # Small bonus for keeping upright
+                print("Upright bonus applied: +1.0")
+            else:
+                print(f"Robot is tipping (roll: {roll}, pitch: {pitch})")
+
         print(f"Total calculated reward: {reward}")
         return reward
 
     
     def check_done(self, state):
-        print(f"Checking done condition with state: {state}")
+        #print(f"Checking done condition with state: {state}")
         # Get the robot's base handle
-        res, robot_handle = sim.simxGetObjectHandle(self.clientID, 'NAO', sim.simx_opmode_blocking)
-    
-        if res != sim.simx_return_ok:
-            print("Failed to get robot base handle")
-            return True  # End the episode if can't get the handle
-    
-        # Get the robot's base position
-        res, position = sim.simxGetObjectPosition(self.clientID, robot_handle, -1, sim.simx_opmode_blocking)
-    
+        res, base_handle = sim.simxGetObjectHandle(self.clientID, 'NAO', sim.simx_opmode_blocking)
         if res == sim.simx_return_ok:
-            z_pos = position[2]  # Z-coordinate of the robot's base
-            if z_pos < 0.1:  # Check if the robot has fallen (Z is too low)
-                print("Robot has fallen: Z position too low")
-                return True
-    
-        # Get the robot's orientation
-        res, orientation = sim.simxGetObjectOrientation(self.clientID, robot_handle, -1, sim.simx_opmode_blocking)
-    
-        if res == sim.simx_return_ok:
-            roll = orientation[0]
-            pitch = orientation[1]
-            if abs(roll) > 0.5 or abs(pitch) > 0.5:  # Check if the robot has tipped over
-                print(f"Robot has tipped over: Roll {roll}, Pitch {pitch}")
-                return True
-        print("Robot is stable")
-        return False  # If no fall is detected
+            # Check z-coordinate (height) to determine if it has fallen
+            _, base_position = sim.simxGetObjectPosition(self.clientID, base_handle, -1, sim.simx_opmode_blocking)
+            _, base_orientation = sim.simxGetObjectOrientation(self.clientID, base_handle, -1, sim.simx_opmode_blocking)
+            roll, pitch, yaw = base_orientation
+
+            # Define some threshold for detecting a fall
+            if base_position[2] < 0.1:  # 0.1 no work 0.2 sometime work
+                print(f"Robot has fallen down (z position low): {base_position[2]}")
+                return True  # The robot has fallen
+            
+            #if abs(roll) > 0.5 or abs(pitch) > 0.5:  # Check for tipping
+                #print(f"Robot has tipped over: Roll {roll}, Pitch {pitch}")
+                #return True  # The robot has tipped over
+
+        return False  # The robot has not fallen
     
     def step(self, action):
         # Apply action, get new state, calc reward, check if done
@@ -146,7 +149,7 @@ class NaoEnvironment:
                 sim.simxSetObjectPosition(self.clientID, handle, -1, state['position'], sim.simx_opmode_blocking)
                 sim.simxSetObjectOrientation(self.clientID, handle, -1, state['orientation'], sim.simx_opmode_blocking)
 
-        time.sleep(1)  # Delay to make sure changes take effect
+        time.sleep(1.5)  # Delay to make sure changes take effect
 
         # Resume the simulation after resetting the robot
         sim.simxStartSimulation(self.clientID, sim.simx_opmode_blocking)
