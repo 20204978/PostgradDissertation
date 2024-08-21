@@ -66,11 +66,54 @@ class NaoEnvironment:
         if res == sim.simx_return_ok:
             sim.simxSetObjectPosition(self.clientID, robot_handle, -1, initial_position, sim.simx_opmode_blocking)
             sim.simxSetObjectOrientation(self.clientID, robot_handle, -1, initial_orientation, sim.simx_opmode_blocking)
+        # Initial positions and orientations for specific joints
+        initial_joint_states = {
+            '/NAO/RHipYawPitch': {'position': [-0.45261, 0.22525, 0.24822], 'orientation': [-45.0, 0.0, 0.0]},
+            '/NAO/RHipRoll': {'position': [-0.45261, 0.22525, 0.24822], 'orientation': [0.0, 90.0, 0.0]}, 
+            '/NAO/RHipPitch': {'position': [-0.45261, 0.22525, 0.24822], 'orientation': [-90.0, 0.0, 0.0]},                
+            '/NAO/RKneePitch': {'position': [-0.45261, 0.22525, 0.14822], 'orientation': [-90.0, 0.0, 0.0]}, 
+            '/NAO/RAnklePitch': {'position': [-0.45261, 0.22525, 0.04532], 'orientation': [-90.0, 0.0, 0.0]}, 
+            '/NAO/RAnkleRoll': {'position': [-0.45261, 0.22525, 0.04532], 'orientation': [0.0, 90.0, 0.0]},
+            '/NAO/LHipYawPitch': {'position': [-0.45261, 0.32525, 0.24822], 'orientation': [-135.0, 0.0, 0.0]}, 
+            '/NAO/LHipRoll': {'position': [-0.45261, 0.32525, 0.24822], 'orientation': [0.0, 90.0, 0.0]}, 
+            '/NAO/LHipPitch': {'position': [-0.45261, 0.32525, 0.24822], 'orientation': [-90.0, 0.0, 0.0]},
+            '/NAO/LKneePitch': {'position': [-0.45261, 0.32525, 0.14822], 'orientation': [-90.0, 0.0, 0.0]}, 
+            '/NAO/LAnklePitch': {'position': [-0.45261, 0.32525, 0.04532], 'orientation': [-90.0, 0.0, 0.0]}, 
+            '/NAO/LAnkleRoll': {'position': [-0.45261, 0.32525, 0.04532], 'orientation': [0.0, 90.0, 0.0]},
+            '/NAO/RShoulderPitch': {'position': [-0.45261, 0.17725, 0.43322], 'orientation': [-90.0, 0.0, 0.0]}, 
+            '/NAO/RShoulderRoll': {'position': [-0.45261, 0.17725, 0.43322], 'orientation': [0.0, 0.0, 0.0]}, 
+            '/NAO/RElbowYaw': {'position': [-0.34761, 0.16225, 0.43322], 'orientation': [0.0, 90.0, 0.0]},
+            '/NAO/RElbowRoll': {'position': [-0.34761, 0.16225, 0.43327], 'orientation': [0.0, 0.0, 0.0]}, 
+            '/NAO/RWristYaw': {'position': [-0.2917, 0.16416, 0.43327], 'orientation': [-90.0, 88.001, 90.0]}, 
+            '/NAO/RThumbBase': {'position': [-0.24239, 0.16601, 0.40793], 'orientation': [89.537, 1.32, 77.525]}, 
+            '/NAO/RThumbBase/joint': {'position': [-0.23674, 0.16601, 0.39468], 'orientation': [89.16, 1.689, 80.615]},
+            '/NAO/RRFingerBase': {'position': [-0.22221, 0.1549, 0.43079], 'orientation': [-99.577, -2.647, -23.413]}, 
+            '/NAO/RRFingerBase/joint': {'position': [-0.20779, 0.1556, 0.4309], 'orientation': [-99.577, -2.647, -23.413]}, 
+            '/NAO/RRFingerBase/joint/Cuboid/joint': {'position': [-0.19342, 0.15629, 0.43103], 'orientation': [-100.178, -2.802, -38.486]},
+            '/NAO/RLFingerBase': {'position': [-0.22271, 0.17787, 0.43127], 'orientation': [-79.577, -2.727, -41.374]}, 
+            '/NAO/RLFingerBase/joint': {'position': [-0.20828, 0.17853, 0.43144], 'orientation': [-79.577, -2.727, -41.374]}, 
+            '/NAO/RLFingerBase/joint/Cuboid/joint': {'position': [-0.19386, 0.1792, 0.43159], 'orientation': [-80.154, -2.883, -37.785]},
+            '/NAO/LShoulderPitch': {'position': [-0.45261, 0.37325, 0.43327], 'orientation': [-90.0, 0.0, 0.0]}, 
+            '/NAO/LShoulderRoll': {'position': [-0.45261, 0.37325, 0.43327], 'orientation': [0.0, 0.0, 0.0]}, 
+            '/NAO/LElbowYaw': {'position': [-0.34761, 0.38825, 0.43327], 'orientation': [0.0, 90.0, 0.0]},
+            '/NAO/LElbowRoll': {'position': [-0.34761, 0.38825, 0.43327], 'orientation': [0.0, 0.0, 0.0]}, 
+            '/NAO/LWristYaw': {'position': [-0.2917, 0.38628, 0.43327], 'orientation': [90.0, 88.001, -90.0]}, 
+            '/NAO/LThumbBase': {'position': [-0.24152, 0.3844, 0.40812], 'orientation': [90.456, -1.323, 81.056]}, 
+            '/NAO/LThumbBase/joint': {'position': [-0.23587, 0.3844, 0.39489], 'orientation': [90.836, -1.692, 82.335]},
+            '/NAO/LRFingerBase': {'position': [-0.22178, 0.37255, 0.43156], 'orientation': [-100.426, 2.721, -159.241]}, 
+            '/NAO/LRFingerBase/joint': {'position': [-0.20735, 0.37189, 0.43174], 'orientation': [-100.426, 2.721, -159.241]}, 
+            '/NAO/LRFingerBase/joint/Cuboid/joint': {'position': [-0.19299, 0.37121, 0.43181], 'orientation': [-99.848, 2.882, 142.213]},
+            '/NAO/LLFingerBase': {'position': [-0.2214, 0.39549, 0.4311], 'orientation': [-80.418, 2.646, -148.162]}, 
+            '/NAO/LLFingerBase/joint': {'position': [-0.20697, 0.3948, 0.43122], 'orientation': [-80.418, 2.646, -148.162]}, 
+            '/NAO/LLFingerBase/joint/Cuboid/joint': {'position': [-0.19254, 0.39411, 0.43133], 'orientation': [-79.815, 2.811, -150.905]},
+            '/NAO/HeadYaw': {'position': [-0.45261, 0.27525, 0.45437], 'orientation': [0.0, 0.0, 0.0]}, 
+            '/NAO/HeadPitch': {'position': [-0.45261, 0.27525, 0.45437], 'orientation': [-90.0, 0.0, 0.0]}}
         # Reset joint angles to the initial position
-        for joint in self.joint_names:
+        for joint, state in initial_joint_states.items():
             handle = self.joint_handles.get(joint)
             if handle:
-                sim.simxSetJointTargetPosition(self.clientID, handle, 0.0, sim.simx_opmode_blocking)  # Reset to 0 angle
+                sim.simxSetObjectPosition(self.clientID, handle, -1, state['position'], sim.simx_opmode_blocking)
+                sim.simxSetObjectOrientation(self.clientID, handle, -1, state['orientation'], sim.simx_opmode_blocking)
         time.sleep(0.1)
         # Resume the simulation after resetting the robot
         sim.simxStartSimulation(self.clientID, sim.simx_opmode_blocking)
