@@ -81,15 +81,17 @@ class NaoEnvironment:
     def calculate_reward(self, state):
         # Base reward for forward movement (state[0] should be forward distance or similar metric)
         reward = state[0]  # Assuming state[0] indicates forward movement
-
+        print(f"Forward movement reward: {reward}")
         # Check if the robot has fallen
         if self.check_done(state):
             reward -= 100  # Apply a large penalty if the robot has fallen
-
+            print("Robot has fallen. Applying fall penalty: -100")
+        print(f"Total calculated reward: {reward}")
         return reward
 
     
     def check_done(self, state):
+        print(f"Checking done condition with state: {state}")
         # Get the robot's base handle
         res, robot_handle = sim.simxGetObjectHandle(self.clientID, 'NAO', sim.simx_opmode_blocking)
     
@@ -103,6 +105,7 @@ class NaoEnvironment:
         if res == sim.simx_return_ok:
             z_pos = position[2]  # Z-coordinate of the robot's base
             if z_pos < 0.1:  # Check if the robot has fallen (Z is too low)
+                print("Robot has fallen: Z position too low")
                 return True
     
         # Get the robot's orientation
@@ -112,8 +115,9 @@ class NaoEnvironment:
             roll = orientation[0]
             pitch = orientation[1]
             if abs(roll) > 0.5 or abs(pitch) > 0.5:  # Check if the robot has tipped over
+                print(f"Robot has tipped over: Roll {roll}, Pitch {pitch}")
                 return True
-
+        print("Robot is stable")
         return False  # If no fall is detected
     
     def step(self, action):
