@@ -41,3 +41,29 @@
 2024-08-20 21:49:56,605 - Total reward for episode 3: 7.292477965354919
 2024-08-20 21:49:56,606 - Starting episode 4
 2024-08-20 21:50:13,144 - Episode 4, Time Step 0: Reward 0.7394218444824219, Epsilon 1.0
+2024-08-21 14:15:52,376 - Starting episode 1
+2024-08-21 14:16:16,138 - Episode 1, Time Step 0: Reward 0.6021823287010193, Epsilon 1.0
+2024-08-21 14:17:12,264 - Total reward for episode 1: 7.514881253242493
+2024-08-21 14:17:12,264 - Starting episode 2
+2024-08-21 14:17:34,157 - Episode 2, Time Step 0: Reward 0.7404297590255737, Epsilon 1.0
+2024-08-21 14:22:18,432 - Starting episode 1
+2024-08-21 14:23:07,092 - Starting episode 1
+2024-08-21 14:23:33,286 - Episode 1, Time Step 0: Reward 0.6020856499671936, Epsilon 1.0
+2024-08-21 14:24:40,223 - Total reward for episode 1: 7.559477269649506
+2024-08-21 14:24:40,223 - Starting episode 2
+2024-08-21 16:44:41,777 - Starting episode 1
+2024-08-21 16:45:24,802 - Episode 1, Time Step 0: Reward 0.718957781791687, Epsilon 1.0
+2024-08-21 16:46:12,775 - Total reward for episode 1: 7.27042818069458
+2024-08-21 16:46:12,775 - Starting episode 2
+2024-08-21 16:46:55,800 - Episode 2, Time Step 0: Reward 0.7405152320861816, Epsilon 1.0
+2024-08-21 16:51:18,256 - Starting episode 1
+2024-08-21 16:52:02,970 - Episode 1, Time Step 0: Reward 0.7406155467033386, Epsilon 1.0
+2024-08-21 16:52:53,749 - Total reward for episode 1: 7.288577437400818
+2024-08-21 16:52:53,749 - Starting episode 2
+2024-08-21 16:53:39,073 - Episode 2, Time Step 0: Reward 0.7406747341156006, Epsilon 1.0
+2024-08-21 16:54:26,812 - Total reward for episode 2: 7.403646528720856
+2024-08-21 16:54:26,812 - Starting episode 3
+2024-08-21 16:55:12,088 - Episode 3, Time Step 0: Reward 0.7406578660011292, Epsilon 1.0
+2024-08-21 16:56:00,352 - Total reward for episode 3: 7.4007004499435425
+2024-08-21 16:56:00,352 - Starting episode 4
+2024-08-21 16:56:45,755 - Episode 4, Time Step 0: Reward 0.7405490875244141, Epsilon 1.0

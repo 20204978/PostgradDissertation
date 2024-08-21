@@ -18,28 +18,92 @@ class NaoEnvironment:
                             '/NAO/LElbowRoll', '/NAO/LWristYaw', '/NAO/LThumbBase', '/NAO/LThumbBase/joint',
                             '/NAO/LRFingerBase', '/NAO/LRFingerBase/joint', '/NAO/LRFingerBase/joint/Cuboid/joint',
                             '/NAO/LLFingerBase', '/NAO/LLFingerBase/joint', '/NAO/LLFingerBase/joint/Cuboid/joint',
-                            '/NAO/HeadYaw', '/NAO/HeadPitch']
+                            '/NAO/HeadYaw', '/NAO/HeadPitch']  
+        self.object_names = ['/NAO/hip_roll_link_respondable', '/NAO/RHipRoll/hip_roll_link_respondable', 
+                             '/NAO/hip_pitch_pure', '/NAO/knee_pitch_link_pure', '/NAO/ankle_pitch_link_pure',
+                             '/NAO/sole_link_pure', '/NAO/RAnkleRoll/part_', '/NAO/RFsrRR', 
+                             '/NAO/RFsrRR/sole_link_pure', '/NAO/RFsrFR', '/NAO/RFsrFR/sole_link_pure',
+                             '/NAO/RFsrRL', '/NAO/RFsrRL/sole_link_pure', '/NAO/RFsrFL',
+                             '/NAO/RFsrFL/sole_link_pure', '/NAO/RHipPitch/part_', '/NAO/part_22_sub',
+                             '/NAO/part_10_sub', '/NAO/RHipRoll/part_', '/NAO/part_',
+                             '/NAO/LHipYawPitch/hip_roll_link_respondable', '/NAO/LHipRoll/hip_roll_link_respondable',
+                             '/NAO/LHipYawPitch/hip_pitch_pure', '/NAO/LHipYawPitch/knee_pitch_link_pure',
+                             '/NAO/LHipYawPitch/ankle_pitch_link_pure', '/NAO/ankle_link_pure', '/NAO/LAnkleRoll/part_',
+                             '/NAO/LFsrRR', '/NAO/LHipYawPitch/sole_link_pure', '/NAO/LFsrFR',
+                             '/NAO/LFsrFR/sole_link_pure', '/NAO/LFsrRL', '/NAO/LFsrRL/sole_link_pure',
+                             '/NAO/LFsrFL', '/NAO/LFsrFL/sole_link_pure', '/NAO/LHipPitch/part_',
+                             '/NAO/part_19_sub', '/NAO/part_13_sub', '/NAO/LHipRoll/part_',
+                             '/NAO/LHipYawPitch/part_', '/NAO/shoulder_pitch_respondable', '/NAO/shoulder_roll_link_respondable',
+                             '/NAO/elbow_yaw_link_respondable', '/NAO/elbow_roll_link_respondable',
+                             '/NAO/wrist_yaw_link_respondable', '/NAO/RThumbBase/Cuboid', '/NAO/RThumbBase/joint/Cuboid',
+                             '/NAO/RThumbBase/joint/part_', '/NAO/RThumbBase/part_', '/NAO/RRFingerBase/Cuboid',
+                             '/NAO/RRFingerBase/joint/Cuboid', '/NAO/RRFingerBase/joint/Cuboid/joint/Cuboid', '/NAO/.../part_',
+                             '/NAO/RRFingerBase/joint/part_', '/NAO/RRFingerBase/part_', '/NAO/RLFingerBase/Cuboid',
+                             '/NAO/RLFingerBase/joint/Cuboid', '/NAO/RLFingerBase/joint/Cuboid/joint/Cuboid', '/NAO/.../part_',
+                             '/NAO/RLFingerBase/joint/part_', '/NAO/RLFingerBase/part_', '/NAO/part_36_sub',
+                             '/NAO/RElbowYaw/part_', '/NAO/RShoulderPitch/part_', '/NAO/.../shoulder_pitch_respondable',
+                             '/NAO/.../shoulder_roll_link_respondable',
+                             '/NAO/.../elbow_yaw_link_respondable', '/NAO/.../elbow_roll_link_respondable',
+                             '/NAO/.../wrist_yaw_link_respondable', '/NAO/LThumbBase/Cuboid', '/NAO/LThumbBase/joint/Cuboid',
+                             '/NAO/LThumbBase/joint/part_', '/NAO/LThumbBase/part_', '/NAO/LRFingerBase/Cuboid',
+                             '/NAO/LRFingerBase/joint/Cuboid', '/NAO/.../Cuboid', '/NAO/.../part_',
+                             '/NAO/LRFingerBase/joint/part_', '/NAO/LRFingerBase/part_', '/NAO/LLFingerBase/Cuboid',
+                             '/NAO/LLFingerBase/joint/Cuboid', '/NAO/.../Cuboid', '/NAO/.../part_',
+                             '/NAO/LLFingerBase/joint/part_', '/NAO/LLFingerBase/part_', '/NAO/part_12_sub',
+                             '/NAO/LElbowYaw/part_', '/NAO/LShoulderPitch/part_', '/NAO/link_respondable',
+                             '/NAO/HeadPitch/link_respondable', '/NAO/part_16_sub', '/NAO/vision[0]',
+                             '/NAO/vision[1]', '/NAO/HeadYaw/part_', '/NAO/part_20_sub',]  
         self.joint_handles = self.get_joint_handles()
-        self.state_size = len(self.joint_names) * 2 # For both position & velocity of each joint
-        self.action_size = len(self.joint_names) # 1 action per joint 
+        self.initial_states = self.get_initial_states()  # Capture initial states for all objects
+        self.state_size = len(self.joint_names) * 2  # For both position & velocity of each joint
+        self.action_size = len(self.joint_names)  # 1 action per joint
 
     def get_joint_handles(self):
-        # Get all joint handles once and store them
+        # Get handles for all joints and objects
         joint_handles = {}
-        for joint in self.joint_names:
+        for joint in self.joint_names + self.object_names:
             res, handle = sim.simxGetObjectHandle(self.clientID, joint, sim.simx_opmode_blocking)
             if res == sim.simx_return_ok:
                 joint_handles[joint] = handle
         return joint_handles
 
+    def get_initial_states(self):
+        # Capture initial positions and orientations for all joints and objects
+        initial_states = {}
+        for joint in self.joint_names + self.object_names:
+            handle = self.joint_handles.get(joint)
+            if handle:
+                res, position = sim.simxGetObjectPosition(self.clientID, handle, -1, sim.simx_opmode_blocking)
+                res, orientation = sim.simxGetObjectOrientation(self.clientID, handle, -1, sim.simx_opmode_blocking)
+                initial_states[joint] = {'position': position, 'orientation': orientation}
+        return initial_states
+
     def calculate_reward(self, state):
-        # Calc and return reward based on the state
-        reward = state[0] # Placeholder for forward movement
+        # Assume state[0] represents forward position along the x-axis
+        # Assume state[1] represents forward velocity
+        forward_position = state[0]
+        forward_velocity = state[1]
+        # Define thresholds
+        min_velocity_threshold = 0.1  # Minimum forward velocity to be rewarded
+        backward_threshold = -0.1     # Penalty if moving backward
+        # Calculate the reward
+        if forward_velocity < min_velocity_threshold:
+            reward = -5  # Penalise for low speed
+        elif forward_velocity < backward_threshold:
+            reward = -10  # Penalise for moving backward
+        else:
+            reward = forward_velocity + forward_position # Reward based on speed and position
         return reward
+
     
     def check_done(self, state):
-        # Check if ep is done
-        return False # Placeholder
+        # Assume state[2] represents the z-position of the robot's center of mass
+        z_position = state[2]
+        # Define a threshold for falling (robot falls if it gets too close to the ground)
+        fall_threshold = 0.2  # Example z-position threshold where the robot is considered fallen
+        if z_position < fall_threshold:
+            return True  # End the episode if the robot has fallen
+        return False  # Continue if the robot is still standing
     
     def step(self, action):
         # Apply action, get new state, calc reward, check if done
@@ -59,62 +123,16 @@ class NaoEnvironment:
     def reset(self):
         # Pause the sim
         sim.simxPauseSimulation(self.clientID, sim.simx_opmode_blocking)
-        # Reset robot's position and orientation to initial values
-        initial_position = [-0.45, 0.275, 0.3518]  # (X, Y, Z) this is whats on copsim
-        initial_orientation = [0.0, 0.0, 0.0]  # (Alpha, Beta, Gamma)
-        res, robot_handle = sim.simxGetObjectHandle(self.clientID, '/NAO', sim.simx_opmode_blocking)
-        if res == sim.simx_return_ok:
-            sim.simxSetObjectPosition(self.clientID, robot_handle, -1, initial_position, sim.simx_opmode_blocking)
-            sim.simxSetObjectOrientation(self.clientID, robot_handle, -1, initial_orientation, sim.simx_opmode_blocking)
-        # Initial positions and orientations for specific joints
-        initial_joint_states = {
-            '/NAO/RHipYawPitch': {'position': [-0.45261, 0.22525, 0.24822], 'orientation': [-45.0, 0.0, 0.0]},
-            '/NAO/RHipRoll': {'position': [-0.45261, 0.22525, 0.24822], 'orientation': [0.0, 90.0, 0.0]}, 
-            '/NAO/RHipPitch': {'position': [-0.45261, 0.22525, 0.24822], 'orientation': [-90.0, 0.0, 0.0]},                
-            '/NAO/RKneePitch': {'position': [-0.45261, 0.22525, 0.14822], 'orientation': [-90.0, 0.0, 0.0]}, 
-            '/NAO/RAnklePitch': {'position': [-0.45261, 0.22525, 0.04532], 'orientation': [-90.0, 0.0, 0.0]}, 
-            '/NAO/RAnkleRoll': {'position': [-0.45261, 0.22525, 0.04532], 'orientation': [0.0, 90.0, 0.0]},
-            '/NAO/LHipYawPitch': {'position': [-0.45261, 0.32525, 0.24822], 'orientation': [-135.0, 0.0, 0.0]}, 
-            '/NAO/LHipRoll': {'position': [-0.45261, 0.32525, 0.24822], 'orientation': [0.0, 90.0, 0.0]}, 
-            '/NAO/LHipPitch': {'position': [-0.45261, 0.32525, 0.24822], 'orientation': [-90.0, 0.0, 0.0]},
-            '/NAO/LKneePitch': {'position': [-0.45261, 0.32525, 0.14822], 'orientation': [-90.0, 0.0, 0.0]}, 
-            '/NAO/LAnklePitch': {'position': [-0.45261, 0.32525, 0.04532], 'orientation': [-90.0, 0.0, 0.0]}, 
-            '/NAO/LAnkleRoll': {'position': [-0.45261, 0.32525, 0.04532], 'orientation': [0.0, 90.0, 0.0]},
-            '/NAO/RShoulderPitch': {'position': [-0.45261, 0.17725, 0.43322], 'orientation': [-90.0, 0.0, 0.0]}, 
-            '/NAO/RShoulderRoll': {'position': [-0.45261, 0.17725, 0.43322], 'orientation': [0.0, 0.0, 0.0]}, 
-            '/NAO/RElbowYaw': {'position': [-0.34761, 0.16225, 0.43322], 'orientation': [0.0, 90.0, 0.0]},
-            '/NAO/RElbowRoll': {'position': [-0.34761, 0.16225, 0.43327], 'orientation': [0.0, 0.0, 0.0]}, 
-            '/NAO/RWristYaw': {'position': [-0.2917, 0.16416, 0.43327], 'orientation': [-90.0, 88.001, 90.0]}, 
-            '/NAO/RThumbBase': {'position': [-0.24239, 0.16601, 0.40793], 'orientation': [89.537, 1.32, 77.525]}, 
-            '/NAO/RThumbBase/joint': {'position': [-0.23674, 0.16601, 0.39468], 'orientation': [89.16, 1.689, 80.615]},
-            '/NAO/RRFingerBase': {'position': [-0.22221, 0.1549, 0.43079], 'orientation': [-99.577, -2.647, -23.413]}, 
-            '/NAO/RRFingerBase/joint': {'position': [-0.20779, 0.1556, 0.4309], 'orientation': [-99.577, -2.647, -23.413]}, 
-            '/NAO/RRFingerBase/joint/Cuboid/joint': {'position': [-0.19342, 0.15629, 0.43103], 'orientation': [-100.178, -2.802, -38.486]},
-            '/NAO/RLFingerBase': {'position': [-0.22271, 0.17787, 0.43127], 'orientation': [-79.577, -2.727, -41.374]}, 
-            '/NAO/RLFingerBase/joint': {'position': [-0.20828, 0.17853, 0.43144], 'orientation': [-79.577, -2.727, -41.374]}, 
-            '/NAO/RLFingerBase/joint/Cuboid/joint': {'position': [-0.19386, 0.1792, 0.43159], 'orientation': [-80.154, -2.883, -37.785]},
-            '/NAO/LShoulderPitch': {'position': [-0.45261, 0.37325, 0.43327], 'orientation': [-90.0, 0.0, 0.0]}, 
-            '/NAO/LShoulderRoll': {'position': [-0.45261, 0.37325, 0.43327], 'orientation': [0.0, 0.0, 0.0]}, 
-            '/NAO/LElbowYaw': {'position': [-0.34761, 0.38825, 0.43327], 'orientation': [0.0, 90.0, 0.0]},
-            '/NAO/LElbowRoll': {'position': [-0.34761, 0.38825, 0.43327], 'orientation': [0.0, 0.0, 0.0]}, 
-            '/NAO/LWristYaw': {'position': [-0.2917, 0.38628, 0.43327], 'orientation': [90.0, 88.001, -90.0]}, 
-            '/NAO/LThumbBase': {'position': [-0.24152, 0.3844, 0.40812], 'orientation': [90.456, -1.323, 81.056]}, 
-            '/NAO/LThumbBase/joint': {'position': [-0.23587, 0.3844, 0.39489], 'orientation': [90.836, -1.692, 82.335]},
-            '/NAO/LRFingerBase': {'position': [-0.22178, 0.37255, 0.43156], 'orientation': [-100.426, 2.721, -159.241]}, 
-            '/NAO/LRFingerBase/joint': {'position': [-0.20735, 0.37189, 0.43174], 'orientation': [-100.426, 2.721, -159.241]}, 
-            '/NAO/LRFingerBase/joint/Cuboid/joint': {'position': [-0.19299, 0.37121, 0.43181], 'orientation': [-99.848, 2.882, 142.213]},
-            '/NAO/LLFingerBase': {'position': [-0.2214, 0.39549, 0.4311], 'orientation': [-80.418, 2.646, -148.162]}, 
-            '/NAO/LLFingerBase/joint': {'position': [-0.20697, 0.3948, 0.43122], 'orientation': [-80.418, 2.646, -148.162]}, 
-            '/NAO/LLFingerBase/joint/Cuboid/joint': {'position': [-0.19254, 0.39411, 0.43133], 'orientation': [-79.815, 2.811, -150.905]},
-            '/NAO/HeadYaw': {'position': [-0.45261, 0.27525, 0.45437], 'orientation': [0.0, 0.0, 0.0]}, 
-            '/NAO/HeadPitch': {'position': [-0.45261, 0.27525, 0.45437], 'orientation': [-90.0, 0.0, 0.0]}}
-        # Reset joint angles to the initial position
-        for joint, state in initial_joint_states.items():
+
+        # Reset all joints and objects to their initial states
+        for joint, state in self.initial_states.items():
             handle = self.joint_handles.get(joint)
             if handle:
                 sim.simxSetObjectPosition(self.clientID, handle, -1, state['position'], sim.simx_opmode_blocking)
                 sim.simxSetObjectOrientation(self.clientID, handle, -1, state['orientation'], sim.simx_opmode_blocking)
-        time.sleep(0.1)
+
+        time.sleep(1)  # Delay to make sure changes take effect
+
         # Resume the simulation after resetting the robot
         sim.simxStartSimulation(self.clientID, sim.simx_opmode_blocking)
         # Get the initial state after reset
@@ -142,6 +160,7 @@ class NaoEnvironment:
             else:
                 print(f"Failed to get joint handle for {joint}")
         return np.array(state)
+
 
 
     
