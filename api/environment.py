@@ -37,18 +37,18 @@ class NaoEnvironment:
                              '/NAO/elbow_yaw_link_respondable', '/NAO/elbow_roll_link_respondable',
                              '/NAO/wrist_yaw_link_respondable', '/NAO/RThumbBase/Cuboid', '/NAO/RThumbBase/joint/Cuboid',
                              '/NAO/RThumbBase/joint/part_', '/NAO/RThumbBase/part_', '/NAO/RRFingerBase/Cuboid',
-                             '/NAO/RRFingerBase/joint/Cuboid', '/NAO/RRFingerBase/joint/Cuboid/joint/Cuboid', '/NAO/.../part_',
+                             '/NAO/RRFingerBase/joint/Cuboid', '/NAO/RRFingerBase/joint/Cuboid/joint/Cuboid', '/NAO/RRFingerBase/joint/Cuboid/joint/Cuboid/part_',
                              '/NAO/RRFingerBase/joint/part_', '/NAO/RRFingerBase/part_', '/NAO/RLFingerBase/Cuboid',
-                             '/NAO/RLFingerBase/joint/Cuboid', '/NAO/RLFingerBase/joint/Cuboid/joint/Cuboid', '/NAO/.../part_',
+                             '/NAO/RLFingerBase/joint/Cuboid', '/NAO/RLFingerBase/joint/Cuboid/joint/Cuboid', '/NAO/RLFingerBase/joint/Cuboid/joint/Cuboid/part_',
                              '/NAO/RLFingerBase/joint/part_', '/NAO/RLFingerBase/part_', '/NAO/part_36_sub',
-                             '/NAO/RElbowYaw/part_', '/NAO/RShoulderPitch/part_', '/NAO/.../shoulder_pitch_respondable',
-                             '/NAO/.../shoulder_roll_link_respondable',
-                             '/NAO/.../elbow_yaw_link_respondable', '/NAO/.../elbow_roll_link_respondable',
-                             '/NAO/.../wrist_yaw_link_respondable', '/NAO/LThumbBase/Cuboid', '/NAO/LThumbBase/joint/Cuboid',
+                             '/NAO/RElbowYaw/part_', '/NAO/RShoulderPitch/part_', '/NAO/LShoulderPitch/shoulder_pitch_respondable',
+                             '/NAO/LShoulderRoll/shoulder_roll_link_respondable',
+                             '/NAO/LElbowYaw/elbow_yaw_link_respondable', '/NAO/LElbowRoll/elbow_roll_link_respondable',
+                             '/NAO/LWristYaw/wrist_yaw_link_respondable', '/NAO/LThumbBase/Cuboid', '/NAO/LThumbBase/joint/Cuboid',
                              '/NAO/LThumbBase/joint/part_', '/NAO/LThumbBase/part_', '/NAO/LRFingerBase/Cuboid',
-                             '/NAO/LRFingerBase/joint/Cuboid', '/NAO/.../Cuboid', '/NAO/.../part_',
+                             '/NAO/LRFingerBase/joint/Cuboid', '/NAO/LRFingerBase/joint/Cuboid/joint/Cuboid', '/NAO/LRFingerBase/joint/Cuboid/joint/Cuboid/part_',
                              '/NAO/LRFingerBase/joint/part_', '/NAO/LRFingerBase/part_', '/NAO/LLFingerBase/Cuboid',
-                             '/NAO/LLFingerBase/joint/Cuboid', '/NAO/.../Cuboid', '/NAO/.../part_',
+                             '/NAO/LLFingerBase/joint/Cuboid', '/NAO/LLFingerBase/joint/Cuboid/joint/Cuboid', '/NAO/LLFingerBase/joint/Cuboid/joint/Cuboid/part_',
                              '/NAO/LLFingerBase/joint/part_', '/NAO/LLFingerBase/part_', '/NAO/part_12_sub',
                              '/NAO/LElbowYaw/part_', '/NAO/LShoulderPitch/part_', '/NAO/link_respondable',
                              '/NAO/HeadPitch/link_respondable', '/NAO/part_16_sub', '/NAO/vision[0]',
@@ -79,31 +79,42 @@ class NaoEnvironment:
         return initial_states
 
     def calculate_reward(self, state):
-        # Assume state[0] represents forward position along the x-axis
-        # Assume state[1] represents forward velocity
-        forward_position = state[0]
-        forward_velocity = state[1]
-        # Define thresholds
-        min_velocity_threshold = 0.1  # Minimum forward velocity to be rewarded
-        backward_threshold = -0.1     # Penalty if moving backward
-        # Calculate the reward
-        if forward_velocity < min_velocity_threshold:
-            reward = -5  # Penalise for low speed
-        elif forward_velocity < backward_threshold:
-            reward = -10  # Penalise for moving backward
-        else:
-            reward = forward_velocity + forward_position # Reward based on speed and position
+        # Base reward for forward movement (state[0] should be forward distance or similar metric)
+        reward = state[0]  # Assuming state[0] indicates forward movement
+
+        # Check if the robot has fallen
+        if self.check_done(state):
+            reward -= 100  # Apply a large penalty if the robot has fallen
+
         return reward
 
     
     def check_done(self, state):
-        # Assume state[2] represents the z-position of the robot's center of mass
-        z_position = state[2]
-        # Define a threshold for falling (robot falls if it gets too close to the ground)
-        fall_threshold = 0.2  # Example z-position threshold where the robot is considered fallen
-        if z_position < fall_threshold:
-            return True  # End the episode if the robot has fallen
-        return False  # Continue if the robot is still standing
+        # Get the robot's base handle
+        res, robot_handle = sim.simxGetObjectHandle(self.clientID, 'NAO', sim.simx_opmode_blocking)
+    
+        if res != sim.simx_return_ok:
+            print("Failed to get robot base handle")
+            return True  # End the episode if can't get the handle
+    
+        # Get the robot's base position
+        res, position = sim.simxGetObjectPosition(self.clientID, robot_handle, -1, sim.simx_opmode_blocking)
+    
+        if res == sim.simx_return_ok:
+            z_pos = position[2]  # Z-coordinate of the robot's base
+            if z_pos < 0.1:  # Check if the robot has fallen (Z is too low)
+                return True
+    
+        # Get the robot's orientation
+        res, orientation = sim.simxGetObjectOrientation(self.clientID, robot_handle, -1, sim.simx_opmode_blocking)
+    
+        if res == sim.simx_return_ok:
+            roll = orientation[0]
+            pitch = orientation[1]
+            if abs(roll) > 0.5 or abs(pitch) > 0.5:  # Check if the robot has tipped over
+                return True
+
+        return False  # If no fall is detected
     
     def step(self, action):
         # Apply action, get new state, calc reward, check if done
