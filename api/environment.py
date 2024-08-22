@@ -79,9 +79,34 @@ class NaoEnvironment:
         return initial_states
 
     def calculate_reward(self, state):
-        # Base reward for forward movement 
-        reward = state[0]  # Assuming state[0] indicates forward movement
-        print(f"Forward movement reward: {reward}")
+        # Get the current torso position
+        res_torso, torso_handle = sim.simxGetObjectHandle(self.clientID, '/NAO', sim.simx_opmode_blocking)
+        if res_torso == sim.simx_return_ok:
+            _, torso_position = sim.simxGetObjectPosition(self.clientID, torso_handle, -1, sim.simx_opmode_blocking)
+    
+        # Initialise movement rewards
+        forward_movement_reward = 0.0
+        lateral_movement_reward = 0.0
+
+        if hasattr(self, 'previous_torso_position'):
+            # Reward for forward movement (change in x-position)
+            forward_movement_reward = torso_position[0] - self.previous_torso_position[0]
+            # Reward for lateral movement (change in y-position)
+            lateral_movement_reward = torso_position[1] - self.previous_torso_position[1]
+        else:
+            # Initialise previous position if it's not set
+            self.previous_torso_position = torso_position
+
+        # Update previous position for the next step
+        self.previous_torso_position = torso_position
+
+        # Sum the movement rewards (weight them if necessary)
+        movement_reward = forward_movement_reward + lateral_movement_reward
+
+        print(f"Forward movement reward: {forward_movement_reward}")
+        print(f"Lateral movement reward: {lateral_movement_reward}")
+
+        reward = movement_reward
 
         # Check if the robot has fallen using the check_done method
         if self.check_done(state):
@@ -89,12 +114,26 @@ class NaoEnvironment:
             print("Robot has fallen. Applying fall penalty: -100")
             return reward
 
+        # Posture reward for staying upright (small roll and pitch)
+        _, torso_orientation = sim.simxGetObjectOrientation(self.clientID, torso_handle, -1, sim.simx_opmode_blocking)
+        roll, pitch, _ = torso_orientation
+
+        posture_reward = 0
+        if abs(roll) < 0.1 and abs(pitch) < 0.1:
+            posture_reward = 0.5  # Reward for maintaining good posture
+        else:
+            posture_reward = -0.2  # Penalise for poor posture
+
+        reward += posture_reward
+
         # Adding small bonus for staying upright
         upright_bonus = 0.1
         reward += upright_bonus
+
         print(f"Total calculated reward: {reward}")
 
         return reward
+
 
     
     def check_done(self, state):
@@ -114,6 +153,14 @@ class NaoEnvironment:
 
         return False  # The robot has not fallen
 
+    def get_torso_position(self):
+        res, torso_handle = sim.simxGetObjectHandle(self.clientID, '/NAO', sim.simx_opmode_blocking)
+        if res == sim.simx_return_ok:
+            _, torso_position = sim.simxGetObjectPosition(self.clientID, torso_handle, -1, sim.simx_opmode_blocking)
+            return torso_position
+        else:
+            print("Failed to get torso handle or position.")
+            return None
 
     
     def check_feet_touching_ground(self):
@@ -154,8 +201,12 @@ class NaoEnvironment:
     
     def step(self, action):
         # Apply action, get new state, calc reward, check if done
-        if isinstance(action, int):
+        # Needs to be a list of appropriate lenght
+        if isinstance(action, (int, float, np.int64)):
             action = [action] * len(self.joint_names)  # Repeat the single action for each joint
+        # Check if the action length matches the number of joints
+        if len(action) != len(self.joint_names):
+            raise ValueError(f"Expected action length: {len(self.joint_names)}, but got: {len(action)}")
         for i, joint in enumerate(self.joint_names):
             handle = self.joint_handles[joint]  # Use pre-stored handle
             # Apply action to each joint
@@ -170,6 +221,10 @@ class NaoEnvironment:
     def reset(self):
         # Pause the sim
         sim.simxPauseSimulation(self.clientID, sim.simx_opmode_blocking)
+        self.previous_torso_position = self.get_torso_position()
+        if self.previous_torso_position is None:
+            # Set to initial position
+            self.previous_torso_position = [-0.45, 0.275, 0.3518]  
 
         # Reset all joints and objects to their initial states
         for joint, state in self.initial_states.items():
