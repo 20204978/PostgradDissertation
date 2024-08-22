@@ -79,49 +79,78 @@ class NaoEnvironment:
         return initial_states
 
     def calculate_reward(self, state):
-         # Reward for consistent joint movements (indicating a walking motion)
-        joint_movements = sum(abs(state[i+1]) for i in range(0, len(state), 2))  # Sum of all joint velocities
-        reward = joint_movements * 10  # Scale for better learning signals
-        print(f"Joint movement reward: {reward}")
+        # Base reward for forward movement 
+        reward = state[0]  # Assuming state[0] indicates forward movement
+        print(f"Forward movement reward: {reward}")
 
-        # Get the robot's base handle
-        res, base_handle = sim.simxGetObjectHandle(self.clientID, 'NAO', sim.simx_opmode_blocking)
-        if res == sim.simx_return_ok:
-            _, base_position = sim.simxGetObjectPosition(self.clientID, base_handle, -1, sim.simx_opmode_blocking)
-            _, base_orientation = sim.simxGetObjectOrientation(self.clientID, base_handle, -1, sim.simx_opmode_blocking)
-            roll, pitch, yaw = base_orientation
+        # Check if the robot has fallen using the check_done method
+        if self.check_done(state):
+            reward -= 100  # Apply a large penalty if the robot has fallen
+            print("Robot has fallen. Applying fall penalty: -100")
+            return reward
 
-            # Add bonus for maintaining balance (staying upright)
-            if abs(roll) < 0.5 and abs(pitch) < 0.5:
-                reward += 1.0  # Small bonus for keeping upright
-                print("Upright bonus applied: +1.0")
-            else:
-                print(f"Robot is tipping (roll: {roll}, pitch: {pitch})")
-
+        # Adding small bonus for staying upright
+        upright_bonus = 0.1
+        reward += upright_bonus
         print(f"Total calculated reward: {reward}")
+
         return reward
 
     
     def check_done(self, state):
-        #print(f"Checking done condition with state: {state}")
-        # Get the robot's base handle
-        res, base_handle = sim.simxGetObjectHandle(self.clientID, 'NAO', sim.simx_opmode_blocking)
-        if res == sim.simx_return_ok:
-            # Check z-coordinate (height) to determine if it has fallen
-            _, base_position = sim.simxGetObjectPosition(self.clientID, base_handle, -1, sim.simx_opmode_blocking)
-            _, base_orientation = sim.simxGetObjectOrientation(self.clientID, base_handle, -1, sim.simx_opmode_blocking)
-            roll, pitch, yaw = base_orientation
+        # Get the robot's head handle
+        res_head, head_handle = sim.simxGetObjectHandle(self.clientID, '/NAO/HeadPitch', sim.simx_opmode_blocking)
 
-            # Define some threshold for detecting a fall
-            if base_position[2] < 0.1:  # 0.1 no work 0.2 sometime work
-                print(f"Robot has fallen down (z position low): {base_position[2]}")
-                return True  # The robot has fallen
-            
-            #if abs(roll) > 0.5 or abs(pitch) > 0.5:  # Check for tipping
-                #print(f"Robot has tipped over: Roll {roll}, Pitch {pitch}")
-                #return True  # The robot has tipped over
+        if res_head == sim.simx_return_ok:
+            # Check the head's z-coordinate to determine if it has fallen
+            _, head_position = sim.simxGetObjectPosition(self.clientID, head_handle, -1, sim.simx_opmode_blocking)
+        
+            # Define a z-coordinate threshold below which the head should not go
+            head_z_threshold = 0.4  # Adjust this threshold according to the robot's height
+        
+            if head_position[2] < head_z_threshold:
+                print(f"Head has fallen down (z position low): {head_position[2]}")
+                return True
 
         return False  # The robot has not fallen
+
+
+    
+    def check_feet_touching_ground(self):
+        # Get foot handles
+        left_foot_handles = ['NAO/LFsrRR/sole_link_pure', 'NAO/LFsrFR/sole_link_pure', 
+                            'NAO/LFsrRL/sole_link_pure', 'NAO/LFsrFL/sole_link_pure']
+        right_foot_handles = ['NAO/RFsrRR/sole_link_pure', 'NAO/RFsrFR/sole_link_pure', 
+                            'NAO/RFsrRL/sole_link_pure', 'NAO/RFsrFL/sole_link_pure']
+
+        all_foot_handles = left_foot_handles + right_foot_handles
+
+        for foot in all_foot_handles:
+            res, foot_handle = sim.simxGetObjectHandle(self.clientID, foot, sim.simx_opmode_blocking)
+            _, foot_position = sim.simxGetObjectPosition(self.clientID, foot_handle, -1, sim.simx_opmode_blocking)
+
+            # Define a ground contact threshold
+            ground_contact_threshold = 0.05
+            if foot_position[2] > ground_contact_threshold:
+                print(f"Foot {foot} is off the ground, robot might have fallen.")
+                return True  # At least one foot is off the ground
+        return False
+
+    def check_head_position(self):
+        # Get head handle
+        res, head_handle = sim.simxGetObjectHandle(self.clientID, '/NAO//HeadPitch/link_respondable', sim.simx_opmode_blocking)
+    
+        # Get the z position (height) of the head
+        _, head_position = sim.simxGetObjectPosition(self.clientID, head_handle, -1, sim.simx_opmode_blocking)
+    
+        # Define threshold for detecting a fall
+        head_height_threshold = 0.2  
+    
+        if head_position[2] < head_height_threshold:
+            print("Head is too low, robot likely fallen.")
+            return True  # Robot has fallen
+        return False  # Robot is still standing
+
     
     def step(self, action):
         # Apply action, get new state, calc reward, check if done
