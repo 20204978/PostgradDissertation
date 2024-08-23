@@ -83,16 +83,24 @@ class NaoEnvironment:
         res_torso, torso_handle = sim.simxGetObjectHandle(self.clientID, '/NAO', sim.simx_opmode_blocking)
         if res_torso == sim.simx_return_ok:
             _, torso_position = sim.simxGetObjectPosition(self.clientID, torso_handle, -1, sim.simx_opmode_blocking)
-    
+
         # Initialise movement rewards
         forward_movement_reward = 0.0
         lateral_movement_reward = 0.0
+        forward_velocity_reward = 0.0
 
         if hasattr(self, 'previous_torso_position'):
             # Reward for forward movement (change in x-position)
             forward_movement_reward = torso_position[0] - self.previous_torso_position[0]
             # Reward for lateral movement (change in y-position)
             lateral_movement_reward = torso_position[1] - self.previous_torso_position[1]
+        
+            # Calculate velocity as the change in position divided by the time step
+            time_step = 0.05  # Coppelia simulation runs at 50ms per step
+            forward_velocity = forward_movement_reward / time_step
+        
+            # Reward for forward velocity
+            forward_velocity_reward = forward_velocity * 0.1 
         else:
             # Initialise previous position if it's not set
             self.previous_torso_position = torso_position
@@ -101,10 +109,11 @@ class NaoEnvironment:
         self.previous_torso_position = torso_position
 
         # Sum the movement rewards (weight them if necessary)
-        movement_reward = forward_movement_reward + lateral_movement_reward
+        movement_reward = forward_movement_reward + lateral_movement_reward + forward_velocity_reward
 
         print(f"Forward movement reward: {forward_movement_reward}")
         print(f"Lateral movement reward: {lateral_movement_reward}")
+        print(f"Forward velocity reward: {forward_velocity_reward}")
 
         reward = movement_reward
 
@@ -133,7 +142,6 @@ class NaoEnvironment:
         print(f"Total calculated reward: {reward}")
 
         return reward
-
 
     
     def check_done(self, state):
