@@ -2,11 +2,13 @@ import sim
 import sys
 import numpy as np
 import logging
+import pickle
+import os
 from environment import NaoEnvironment
 from dqn import DQNAgent  
 
 # Configure logging
-logging.basicConfig(filename='training_log.txt', level=logging.INFO, format='%(asctime)s - %(message)s')
+logging.basicConfig(filename='training_log_new2.txt', level=logging.INFO, format='%(asctime)s - %(message)s')
 
 def connect_to_simulation():
     sim.simxFinish(-1)  # Close any open connections just in case
@@ -38,7 +40,7 @@ if __name__ == "__main__":
         state = np.reshape(state, [1, state_size])
         total_reward = 0
         
-        for time in range(10):  # Time steps per ep
+        for time in range(200):  # Time steps per ep
             action = agent.act(state)
             next_state, reward, done = env.step(action)
             total_reward += reward
@@ -63,6 +65,19 @@ if __name__ == "__main__":
         rewards.append(total_reward)
         logging.info(f"Total reward for episode {e+1}: {total_reward}")
         print(f"Total reward for episode {e+1}: {total_reward}")
+
+        # Periodically save the model during training (every 50 eps)
+        if e % 50 == 0:
+            with open(f'trained_model_episode_{e}.pkl', 'wb') as f:
+                pickle.dump(agent, f)
+            logging.info(f"Model saved after episode {e}")
+            print(f"Model saved after episode {e}")
+
+     # Final save after all episodes
+    with open('trained_model_final.pkl', 'wb') as f:
+        pickle.dump(agent, f)
+    logging.info("Final model saved as 'trained_model_final.pkl'")
+    print("Final model saved as 'trained_model_final.pkl'")
     
     # Save rewards for later analysis
     np.save('rewards.npy', rewards)
