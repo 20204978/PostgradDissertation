@@ -101,6 +101,9 @@ class NaoEnvironment:
         
             # Reward for forward velocity
             forward_velocity_reward = forward_velocity * 0.1 
+            # Add a small baseline reward to encourage movement even if small
+            if forward_movement_reward > 0:
+                forward_movement_reward += 0.1
         else:
             # Initialise previous position if it's not set
             self.previous_torso_position = torso_position
@@ -138,6 +141,12 @@ class NaoEnvironment:
         # Adding small bonus for staying upright
         upright_bonus = 0.1
         reward += upright_bonus
+
+        # Sum up all the movement, posture, and upright bonuses
+        reward += movement_reward + posture_reward + upright_bonus
+
+        # Ensure the total reward is not negative unless the robot has fallen
+        reward = max(reward, 0)
 
         print(f"Total calculated reward: {reward}")
 
