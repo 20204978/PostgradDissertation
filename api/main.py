@@ -58,7 +58,7 @@ if __name__ == "__main__":
     checkpoint_prefix = os.path.join(checkpoint_dir, "ckpt_{episode}")
     checkpoint = tf.train.Checkpoint(model=agent.model)
 
-    for e in range(1000):  # Number of eps
+    for e in range(500):  # Number of eps
         logging.info(f"Starting episode {e+1}")
         print(f"Starting episode {e+1}")  # Also print to terminal
         

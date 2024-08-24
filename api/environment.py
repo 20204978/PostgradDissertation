@@ -101,10 +101,10 @@ class NaoEnvironment:
             forward_velocity = forward_movement_reward / time_step
         
             # Reward for forward velocity
-            forward_velocity_reward = forward_velocity * 0.5 
+            forward_velocity_reward = forward_velocity * 0.1 
             # Add a small baseline reward to encourage movement even if small
             if forward_movement_reward > 0:
-                forward_movement_reward += 0.5
+                forward_movement_reward += 0.1
         else:
             # Initialise previous position if it's not set
             self.previous_torso_position = torso_position
@@ -112,18 +112,22 @@ class NaoEnvironment:
         # Update previous position for the next step
         self.previous_torso_position = torso_position
 
+        # Leg movement rewards
+        leg_movement_reward = self.calculate_leg_movement_reward()
+
         # Sum the movement rewards (weight them if necessary)
-        movement_reward = forward_movement_reward + lateral_movement_reward + forward_velocity_reward
+        movement_reward = forward_movement_reward + lateral_movement_reward + forward_velocity_reward + leg_movement_reward
 
         print(f"Forward movement reward: {forward_movement_reward}")
         print(f"Lateral movement reward: {lateral_movement_reward}")
         print(f"Forward velocity reward: {forward_velocity_reward}")
+        print(f"Leg movement reward: {leg_movement_reward}")
 
         reward = movement_reward
 
         # Check if the robot has fallen using the check_done method
         if self.check_done(state):
-            reward -= 100  # Apply a large penalty if the robot has fallen
+            reward -= 50  # Apply a large penalty if the robot has fallen
             print("Robot has fallen. Applying fall penalty: -100")
             return reward
 
@@ -133,7 +137,7 @@ class NaoEnvironment:
 
         posture_reward = 0
         if abs(roll) < 0.1 and abs(pitch) < 0.1:
-            posture_reward = 0.5  # Reward for maintaining good posture
+            posture_reward = 0.1  # Reward for maintaining good posture
         else:
             posture_reward = -0.2  # Penalise for poor posture
 
@@ -170,6 +174,36 @@ class NaoEnvironment:
                 return True
 
         return False  # The robot has not fallen
+    
+    def get_joint_movement(self, joint_name):
+        # Get the current joint position/angle
+        res, joint_handle = sim.simxGetObjectHandle(self.clientID, joint_name, sim.simx_opmode_blocking)
+        if res == sim.simx_return_ok:
+            _, current_angle = sim.simxGetJointPosition(self.clientID, joint_handle, sim.simx_opmode_blocking)
+        
+            # If the joint has a previous position stored, calculate the movement
+            previous_angle = getattr(self, f'previous_{joint_name}_angle', None)
+            if previous_angle is not None:
+                movement = current_angle - previous_angle
+            else:
+                movement = 0  # No movement if there's no previous data
+        
+            # Store the current position for the next time step
+            setattr(self, f'previous_{joint_name}_angle', current_angle)
+        
+            return movement
+        else:
+            print(f"Error getting joint handle for {joint_name}")
+            return 0
+
+    
+    def calculate_leg_movement_reward(self):
+        # Logic for rewarding leg movement
+        # Need to get the current positions/angles of knee and ankle joints
+        knee_movement = abs(self.get_joint_movement('RKneePitch')) + abs(self.get_joint_movement('LKneePitch'))
+        ankle_movement = abs(self.get_joint_movement('RAnklePitch')) + abs(self.get_joint_movement('LAnklePitch'))
+        leg_movement_reward = (knee_movement + ankle_movement) * 0.1
+        return leg_movement_reward
 
     def get_torso_position(self):
         res, torso_handle = sim.simxGetObjectHandle(self.clientID, '/NAO', sim.simx_opmode_blocking)

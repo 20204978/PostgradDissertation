@@ -26,10 +26,12 @@ class DQNAgent:
         self.action_size = action_size
         self.memory = deque(maxlen=2000)
         self.gamma = 0.95  # Discount rate
-        self.epsilon = 1.0  # Exploration rate
-        self.epsilon_min = 0.01
-        self.epsilon_decay = 0.995
+        self.epsilon = 1.0  # initial Exploration rate
+        self.epsilon_min = 0.01 # minimum exploration rate
+        self.epsilon_decay = 0.995 # Decay rate per ep
+        self.decay_interval = 10 # Apply decay every 10 epa
         self.learning_rate = 0.001
+         self.episode_counter = 0  # Initialise episode counter
         self.model = DQNNetwork(state_size, action_size)
         self.target_model = DQNNetwork(state_size, action_size)
         self.update_target_model()
@@ -45,9 +47,9 @@ class DQNAgent:
 
     def act(self, state):
         if np.random.rand() <= self.epsilon:
-            return random.randrange(self.action_size)
+            return random.randrange(self.action_size) # Explore 
         q_values = self.model.predict(state)
-        return np.argmax(q_values[0])
+        return np.argmax(q_values[0]) # Exploit
 
     def replay(self, batch_size):
         minibatch = random.sample(self.memory, batch_size)
@@ -58,8 +60,12 @@ class DQNAgent:
             target_f = self.model.predict(state)
             target_f[0][action] = target
             self.model.fit(state, target_f, epochs=1, verbose=0)
-        if self.epsilon > self.epsilon_min:
-            self.epsilon *= self.epsilon_decay
+        # Increment the episode counter
+        self.episode_counter += 1
+        # Apply epsilon decay every 'decay_interval' episodes
+        if self.episode_counter % self.decay_interval == 0:
+            if self.epsilon > self.epsilon_min:
+                self.epsilon *= self.epsilon_decay  # Decay epsilon
 
 
 
