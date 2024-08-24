@@ -90,20 +90,21 @@ class NaoEnvironment:
         forward_velocity_reward = 0.0
 
         if hasattr(self, 'previous_torso_position'):
+            # Absolute difference to ensure non-negative rewards
             # Reward for forward movement (change in x-position)
-            forward_movement_reward = torso_position[0] - self.previous_torso_position[0]
+            forward_movement_reward = abs(torso_position[0] - self.previous_torso_position[0])
             # Reward for lateral movement (change in y-position)
-            lateral_movement_reward = torso_position[1] - self.previous_torso_position[1]
-        
+            lateral_movement_reward = abs(torso_position[1] - self.previous_torso_position[1])
+            
             # Calculate velocity as the change in position divided by the time step
             time_step = 0.05  # Coppelia simulation runs at 50ms per step
             forward_velocity = forward_movement_reward / time_step
         
             # Reward for forward velocity
-            forward_velocity_reward = forward_velocity * 0.1 
+            forward_velocity_reward = forward_velocity * 0.5 
             # Add a small baseline reward to encourage movement even if small
             if forward_movement_reward > 0:
-                forward_movement_reward += 0.1
+                forward_movement_reward += 0.5
         else:
             # Initialise previous position if it's not set
             self.previous_torso_position = torso_position

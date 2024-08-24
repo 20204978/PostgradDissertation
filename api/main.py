@@ -12,7 +12,7 @@ from environment import NaoEnvironment
 from dqn import DQNAgent  
 
 # Configure logging
-logging.basicConfig(filename='training_log_new2.txt', level=logging.INFO, format='%(asctime)s - %(message)s')
+logging.basicConfig(filename='training_log_new3.txt', level=logging.INFO, format='%(asctime)s - %(message)s')
 
 def connect_to_simulation():
     sim.simxFinish(-1)  # Close any open connections just in case
@@ -66,7 +66,7 @@ if __name__ == "__main__":
         state = np.reshape(state, [1, state_size])
         total_reward = 0
         
-        for time in range(200):  # Time steps per ep
+        for time in range(100):  # Time steps per ep
             action = agent.act(state)
             next_state, reward, done = env.step(action)
             total_reward += reward
