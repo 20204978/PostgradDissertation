@@ -31,7 +31,7 @@ class DQNAgent:
         self.epsilon_decay = 0.995 # Decay rate per ep
         self.decay_interval = 10 # Apply decay every 10 epa
         self.learning_rate = 0.001
-         self.episode_counter = 0  # Initialise episode counter
+        self.episode_counter = 0  # Initialise episode counter
         self.model = DQNNetwork(state_size, action_size)
         self.target_model = DQNNetwork(state_size, action_size)
         self.update_target_model()
