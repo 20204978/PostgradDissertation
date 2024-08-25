@@ -8,8 +8,8 @@ from environment import NaoEnvironment
 
 # Define the DQN network architecture
 class DQNNetwork(tf.keras.Model):
-    def __init__(self, state_size, action_size):
-        super(DQNNetwork, self).__init__()
+    def __init__(self, state_size, action_size, **kwargs):
+        super(DQNNetwork, self).__init__(**kwargs)
         self.fc1 = tf.keras.layers.Dense(64, activation='relu')
         self.fc2 = tf.keras.layers.Dense(64, activation='relu')
         self.fc3 = tf.keras.layers.Dense(action_size)
@@ -18,6 +18,19 @@ class DQNNetwork(tf.keras.Model):
         x = self.fc1(state)
         x = self.fc2(x)
         return self.fc3(x)
+    
+    # Add serialisation methods
+    def get_config(self):
+        config = super(DQNNetwork, self).get_config()
+        config.update({
+            "state_size": self.fc1.input_shape[-1],
+            "action_size": self.fc3.units,
+        })
+        return config
+
+    @classmethod
+    def from_config(cls, config):
+        return cls(**config)
 
 # DQN Agent Class
 class DQNAgent:

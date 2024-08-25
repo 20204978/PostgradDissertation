@@ -127,8 +127,8 @@ class NaoEnvironment:
 
         # Check if the robot has fallen using the check_done method
         if self.check_done(state):
-            reward -= 50  # Apply a large penalty if the robot has fallen
-            print("Robot has fallen. Applying fall penalty: -50")
+            reward -= 20  # Apply a large penalty if the robot has fallen
+            print("Robot has fallen. Applying fall penalty: -20")
             return reward
 
         # Posture reward for staying upright (small roll and pitch)
