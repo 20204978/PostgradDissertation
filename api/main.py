@@ -10,6 +10,7 @@ import tensorflow as tf
 from tensorflow import summary
 from environment import NaoEnvironment
 from dqn import DQNAgent  
+from dqn import DQNNetwork
 
 # Configure logging
 logging.basicConfig(filename='training_log_new3.txt', level=logging.INFO, format='%(asctime)s - %(message)s')
@@ -110,8 +111,7 @@ if __name__ == "__main__":
 
         # Periodically save the model during training (every 50 eps)
         if e % 50 == 0:
-            with open(f'trained_model_episode_{e}.pkl', 'wb') as f:
-                pickle.dump(agent, f)
+            agent.model.save(f'trained_model_episode_{e}.h5')
             logging.info(f"Model saved after episode {e}")
             print(f"Model saved after episode {e}")
 
@@ -119,8 +119,7 @@ if __name__ == "__main__":
             plot_rewards(rewards, e + 1)
 
      # Final save after all episodes
-    with open('trained_model_final.pkl', 'wb') as f:
-        pickle.dump(agent, f)
+    agent.model.save('trained_model_final.h5')
     logging.info("Final model saved as 'trained_model_final.pkl'")
     print("Final model saved as 'trained_model_final.pkl'")
     

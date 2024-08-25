@@ -4,6 +4,7 @@ import numpy as np
 import pickle
 import matplotlib.pyplot as plt
 from environment import NaoEnvironment  # Import environment class
+from dqn import DQNNetwork  # Import the DQNNetwork class to reconstruct the model
 
 def connect_to_simulation():
     sim.simxFinish(-1)  # Close any open connections just in case
@@ -21,12 +22,18 @@ if __name__ == "__main__":
     clientID = connect_to_simulation()
     env = NaoEnvironment(clientID)
 
-    # Load the trained model
+    # Load the trained agent
     with open('trained_model_episode_150.pkl', 'rb') as f:
         agent = pickle.load(f)
 
+    # Rebuild the model architecture if necessary
     state_size = env.state_size
     action_size = env.action_size
+    model = DQNNetwork(state_size, action_size)
+    model.set_weights(agent.model.get_weights())  # Set the weights from the loaded agent
+
+    # Replace the old model with the newly rebuilt one
+    agent.model = model
 
     total_rewards = []
 
