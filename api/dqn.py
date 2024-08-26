@@ -4,12 +4,16 @@ import sim
 import random
 import tensorflow as tf
 from collections import deque
+from tensorflow.python import keras
 from environment import NaoEnvironment
+from tensorflow.python.keras.layers import Dense
 
 # Define the DQN network architecture
 class DQNNetwork(tf.keras.Model):
     def __init__(self, state_size, action_size, **kwargs):
         super(DQNNetwork, self).__init__(**kwargs)
+        self.state_size = state_size  # Explicitly set state_size
+        self.action_size = action_size  # Explicitly set action_size
         self.fc1 = tf.keras.layers.Dense(64, activation='relu')
         self.fc2 = tf.keras.layers.Dense(64, activation='relu')
         self.fc3 = tf.keras.layers.Dense(action_size)
@@ -23,8 +27,8 @@ class DQNNetwork(tf.keras.Model):
     def get_config(self):
         config = super(DQNNetwork, self).get_config()
         config.update({
-            "state_size": self.fc1.input_shape[-1],
-            "action_size": self.fc3.units,
+            "state_size": self.state_size,
+            "action_size": self.action_size,
         })
         return config
 

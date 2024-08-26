@@ -20,7 +20,7 @@ if __name__ == "__main__":
     env = NaoEnvironment(clientID)
 
     # Load the trained model
-    model = load_model('trained_model_episode_100.h5', custom_objects={'DQNNetwork': DQNNetwork})
+    model = load_model('trained_model_episode_50.h5', custom_objects={'DQNNetwork': DQNNetwork})
 
     num_episodes = 10  # Set the number of episodes you want to run for testing
     total_rewards = []
